@@ -12,56 +12,82 @@ import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import { getProgram } from "./programConfig";
 import { getNewMarketConfig } from "./instructionConfig";
-import { CurveConfig, Market } from "./interfaces";
+import { CurveConfig, Market, NewMarketConfig } from "./interfaces";
 import { DEFAULT_RESERVE_MINT } from "./defaultConstants";
+import {
+  createAssociatedTokenAccountInstruction,
+  findAssociatedTokenAccount,
+} from "./tokenHelpers";
 
 const provider = anchor.Provider.env();
 const program = getProgram(provider.wallet);
 
-export const createMarket = async (
-  name: string,
-  curveConfig: CurveConfig
+export const seedMarket = async () => {};
+
+export const makeMarket = async (
+  marketConfig: NewMarketConfig,
+  curveConfig: CurveConfig,
+  creator: PublicKey,
+  creatorPair?: Keypair
 ): Promise<Market> => {
-  let config = await getNewMarketConfig(name);
-  console.log(config.targetMint.publicKey.toBase58());
+  let creatorTargetTokenAccount = await findAssociatedTokenAccount(
+    creator,
+    marketConfig.targetMint.publicKey
+  );
+  let creatorReserveTokenAccount = await findAssociatedTokenAccount(
+    creator,
+    DEFAULT_RESERVE_MINT.publicKey
+  );
+  let signers = [marketConfig.targetMint];
+  if (creatorPair) {
+    signers.push(creatorPair);
+  }
+  console.log(marketConfig.targetMint.publicKey.toBase58());
   console.log(DEFAULT_RESERVE_MINT.publicKey.toBase58());
-  const tx = await program.rpc.createMarket(
-    config.market.bump,
-    config.attribution.bump,
-    config.reserve.bump,
-    config.patrol.bump,
-    name,
+  const tx = await program.rpc.makeMarket(
+    marketConfig.market.bump,
+    marketConfig.attribution.bump,
+    marketConfig.reserve.bump,
+    marketConfig.patrol.bump,
+    marketConfig.name,
     curveConfig,
     {
       accounts: {
-        payer: provider.wallet.publicKey,
-        creator: provider.wallet.publicKey,
-        market: config.market.address,
-        attribution: config.attribution.address,
-        targetMint: config.targetMint.publicKey,
+        payer: creator,
+        creator: creator,
+        market: marketConfig.market.address,
+        attribution: marketConfig.attribution.address,
+        targetMint: marketConfig.targetMint.publicKey,
         reserveMint: DEFAULT_RESERVE_MINT.publicKey,
-        reserve: config.reserve.address,
-        patrol: config.patrol.address,
+        reserve: marketConfig.reserve.address,
+        patrol: marketConfig.patrol.address,
         rent: web3.SYSVAR_RENT_PUBKEY,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
       },
-      signers: [config.targetMint],
+      signers: signers,
     }
   );
   //await printMarket(config.market.address);
-  let storedMarket = await program.account.market.fetch(config.market.address);
-  console.log("CREATED MARKET", name, "at", config.market.address.toBase58());
+  let storedMarket = await program.account.market.fetch(
+    marketConfig.market.address
+  );
+  console.log(
+    "CREATED MARKET",
+    marketConfig.name,
+    "at",
+    marketConfig.market.address.toBase58()
+  );
   console.log("curve config", storedMarket.curveConfig);
   return {
-    name: name,
+    name: marketConfig.name,
     creator: provider.wallet.publicKey,
     curveConfig: curveConfig,
     targetMint: storedMarket.targetMint,
     reserveMint: storedMarket.reserveMint,
     reserve: storedMarket.reserve,
     patrol: storedMarket.patrol,
-    address: config.market.address,
+    address: marketConfig.market.address,
     bump: storedMarket.bump,
   };
 };

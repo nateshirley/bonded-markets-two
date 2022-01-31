@@ -1,7 +1,7 @@
 use {crate::id, crate::state::*, crate::utils::*, anchor_lang::prelude::*, anchor_spl::token};
 
 pub fn handler(
-    ctx: Context<CreateMarket>,
+    ctx: Context<MakeMarket>,
     market_bump: u8,
     _attribution_bump: u8,
     reserve_bump: u8,
@@ -9,8 +9,6 @@ pub fn handler(
     name: String,
     curve_config: CurveConfig,
 ) -> ProgramResult {
-    verify_market_patrol(&ctx.accounts, patrol_bump)?;
-
     ctx.accounts.market.name = name;
     ctx.accounts.market.creator = ctx.accounts.creator.key();
     ctx.accounts.market.curve_config = curve_config;
@@ -26,31 +24,23 @@ pub fn handler(
     };
     ctx.accounts.market.bump = market_bump;
 
-    //put some money in the reserve
-    //1 token issues, 10.5
-    //10 token 5 in reserve
-    //
-    //0.5 plus initial price (aka 5)
-    //inital would be
-
     Ok(())
 }
 
-pub fn verify_market_patrol(accounts: &CreateMarket, patrol_bump: u8) -> ProgramResult {
-    let (expected_patrol, expected_patrol_bump) = Pubkey::find_program_address(
-        &[MARKET_PATROL_SEED, accounts.target_mint.key().as_ref()],
-        &id(),
-    );
-    if accounts.patrol.key() == expected_patrol && patrol_bump == expected_patrol_bump {
-        Ok(())
-    } else {
-        Err(ErrorCode::InvalidMarketPatrol.into())
-    }
+pub fn market_patrol_is_canoncial(
+    target_mint: Pubkey,
+    passed_patrol: Pubkey,
+    passed_bump: u8,
+) -> bool {
+    let (expected_patrol, expected_patrol_bump) =
+        Pubkey::find_program_address(&[MARKET_PATROL_SEED, target_mint.as_ref()], &id());
+    passed_patrol == expected_patrol && passed_bump == expected_patrol_bump
 }
 
 #[derive(Accounts)]
 #[instruction(market_bump: u8, attribution_bump: u8, reserve_bump: u8, patrol_bump: u8, name: String)]
-pub struct CreateMarket<'info> {
+pub struct MakeMarket<'info> {
+    #[account(mut)]
     payer: Signer<'info>,
     creator: Signer<'info>,
     #[account(
@@ -85,6 +75,9 @@ pub struct CreateMarket<'info> {
         token::mint = reserve_mint,
     )]
     reserve: Box<Account<'info, token::TokenAccount>>,
+    #[account(
+        constraint = market_patrol_is_canoncial(target_mint.key(), patrol.key(), patrol_bump)
+    )]
     patrol: UncheckedAccount<'info>, //validated in ix
     rent: Sysvar<'info, Rent>,
     token_program: Program<'info, token::Token>,

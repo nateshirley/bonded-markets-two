@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { BN, Program } from "@project-serum/anchor";
 import { BondedMarketsTwo } from "../target/types/bonded_markets_two";
-import { createMarket } from "./helpers/execution";
+import { makeMarket } from "./helpers/execution";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, SystemProgram, Keypair } from "@solana/web3.js";
 import {
@@ -20,6 +20,7 @@ import {
   createAssociatedTokenAccountInstruction,
   findAssociatedTokenAccount,
 } from "./helpers/tokenHelpers";
+import { getNewMarketConfig } from "./helpers/instructionConfig";
 
 describe("bonded-markets-two", () => {
   // Configure the client to use the local cluster.
@@ -70,15 +71,64 @@ describe("bonded-markets-two", () => {
   it("Is initialized!", async () => {
     // Add your test here.
 
-    let yeezy = await createMarket("yeezy", {
-      reserveRatio: 50,
-      preMine: new BN(0),
-      initialPrice: new BN(0),
-      maxSupply: new BN(100000),
+    let marketConfig = await getNewMarketConfig("yeezy");
+    let creator = await createUser(
+      web3.Keypair.generate(),
+      marketConfig.targetMint.publicKey
+    );
+    let yeezy = await makeMarket(
+      marketConfig,
+      {
+        reserveRatio: 50,
+        preMine: new BN(0),
+        initialPrice: new BN(0),
+        maxSupply: new BN(100000),
+      },
+      creator.wallet.publicKey,
+      creator.wallet
+    );
+
+    await program.rpc.seedMarket({
+      accounts: {
+        seeder: creator.wallet.publicKey,
+        market: yeezy.address,
+        marketTargetMint: yeezy.targetMint,
+        seederTargetTokenAccount: creator.targetTokenAccount.address,
+        seederReserveTokenAccount: creator.reserveTokenAccount.address,
+        marketReserve: yeezy.reserve.address,
+        marketPatrol: yeezy.patrol.address,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      instructions: [
+        createAssociatedTokenAccountInstruction(
+          yeezy.targetMint,
+          creator.targetTokenAccount.address,
+          creator.wallet.publicKey,
+          creator.wallet.publicKey
+        ),
+      ],
+      signers: [creator.wallet],
     });
-    let firstUser = await createUser(web3.Keypair.generate(), yeezy.targetMint);
-    await buy(firstUser, yeezy, new BN(100));
+
+    await buy(creator, yeezy, new BN(99));
+    await sell(creator, yeezy, new BN(50));
   });
+
+  const sell = async (user: User, market: Market, amount: BN) => {
+    const tx = await program.rpc.sell(amount, {
+      accounts: {
+        seller: user.wallet.publicKey,
+        sellerReserveTokenAccount: user.reserveTokenAccount.address,
+        sellerTargetTokenAccount: user.targetTokenAccount.address,
+        market: market.address,
+        marketPatrol: market.patrol.address,
+        marketTargetMint: market.targetMint,
+        marketReserve: market.reserve.address,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [user.wallet],
+    });
+  };
 
   const buy = async (user: User, market: Market, amount: BN) => {
     const tx = await program.rpc.buy(amount, {
