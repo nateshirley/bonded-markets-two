@@ -18,7 +18,8 @@ pub fn handler(ctx: Context<Buy>, targets: u64) -> ProgramResult {
     //panic!();
     // 2) transfer from buyer's wallet to market reserve
     token::transfer(
-        ctx.accounts.into_receive_base_tokens_from_buyer_context(),
+        ctx.accounts
+            .into_receive_reserve_tokens_from_buyer_context(),
         reserve_value,
     )?;
     // 3) mint tokens to buyer
@@ -48,7 +49,7 @@ impl<'info> Buy<'info> {
         };
         CpiContext::new(cpi_program, cpi_accounts)
     }
-    pub fn into_receive_base_tokens_from_buyer_context(
+    pub fn into_receive_reserve_tokens_from_buyer_context(
         &self,
     ) -> CpiContext<'_, '_, '_, 'info, token::Transfer<'info>> {
         let cpi_program = self.token_program.to_account_info();

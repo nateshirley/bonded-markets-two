@@ -5,4 +5,6 @@ pub enum ErrorCode {
     CurveDoesNotExist,
     #[msg("market patrol not canonical bump")]
     InvalidMarketPatrol,
+    #[msg("creator trying to unlock beyond max amount")]
+    GreedyCreatorUnlock,
 }

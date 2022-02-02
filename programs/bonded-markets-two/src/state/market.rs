@@ -1,9 +1,10 @@
 use anchor_lang::prelude::*;
+use std::convert::TryFrom;
 
 #[account]
 pub struct Market {
     pub name: String,
-    pub creator: Pubkey, //wallet of creator
+    pub creator: Creator,
     pub curve_config: CurveConfig,
     pub target_mint: Pubkey,
     pub reserve_mint: Pubkey,
@@ -13,11 +14,12 @@ pub struct Market {
 }
 //8
 //20 for str
-//32 * 3
+//44
+//32 * 2
 //33 * 2
 //26
 //1
-//= 217
+//= 229
 
 #[derive(Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
 pub struct CurveConfig {
@@ -29,12 +31,19 @@ pub struct CurveConfig {
 //size = 26
 
 #[derive(Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
+pub struct Creator {
+    pub wallet: Pubkey,
+    pub creator_share: u16, //percentage out of 10000 aka basis points
+    pub amount_unlocked: u64,
+}
+//32 + 4 + 8 = 44
+
+#[derive(Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
 pub struct Pda {
     pub address: Pubkey,
     pub bump: u8,
 }
 //size = 33
-
 impl MarketMath for Market {
     fn curve_supply(&self, target_mint_supply: u64) -> u64 {
         target_mint_supply
@@ -95,6 +104,19 @@ impl MarketMath for Market {
         msg!("whole: {}", whole);
         whole.checked_add(self.support_value(targets)).unwrap()
     }
+    fn max_creator_unlock_now(&self, target_mint_supply: u128) -> u64 {
+        let creator_share = u128::from(self.creator.creator_share);
+        u64::try_from(creator_share.checked_mul(target_mint_supply).unwrap() / 10000).unwrap()
+    }
+    //if we do this then u have to have a max supply. yeah that's fine
+    //technically u could have max supply if creator share is 0? sure
+    fn max_creator_unlock_ever(&self) -> u64 {
+        let max_supply = u128::from(self.curve_config.max_supply.unwrap_or(0));
+        let creator_share = u128::from(self.creator.creator_share);
+        let big_creator_share: u128 = max_supply * creator_share;
+        let accurate_share = big_creator_share / 10000;
+        u64::try_from(accurate_share).unwrap()
+    }
 }
 
 pub trait MarketMath {
@@ -114,4 +136,6 @@ pub trait MarketMath {
         target_mint_supply: u64,
         reserve_balance: u64,
     ) -> u64;
+    fn max_creator_unlock_now(&self, target_mint_supply: u128) -> u64;
+    fn max_creator_unlock_ever(&self) -> u64;
 }

@@ -9,8 +9,17 @@ pub fn handler(
     name: String,
     curve_config: CurveConfig,
 ) -> ProgramResult {
+    /* unlock constraints
+        - creator share must be less than 5k
+        - creator share must be 0 if there's no max supply
+    */
+
     ctx.accounts.market.name = name;
-    ctx.accounts.market.creator = ctx.accounts.creator.key();
+    ctx.accounts.market.creator = Creator {
+        wallet: ctx.accounts.creator.key(),
+        creator_share: 1111, //make sure it's never bigger than 10k (5k? idk)
+        amount_unlocked: 0,
+    };
     ctx.accounts.market.curve_config = curve_config;
     ctx.accounts.market.target_mint = ctx.accounts.target_mint.key();
     ctx.accounts.market.reserve_mint = ctx.accounts.reserve_mint.key();
