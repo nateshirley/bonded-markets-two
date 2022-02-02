@@ -12,7 +12,9 @@ pub enum ErrorCode {
     #[msg("creator share must be 0 if using infinite supply")]
     InfiniteSupplyRequiresZeroCreatorShare,
     #[msg("buying this amount will exceed the market's max supply")]
-    BuyExceedsMaxSupply,
-    #[msg("selling this amount will go below the market's min supply")]
-    SellBelowMinSupply,
+    BuyExceedsMaxCurveSupply,
+    #[msg("selling for zero return. below curve minimum")]
+    ZeroTargetSale,
+    #[msg("buying zero targets")]
+    ZeroTargetBuy,
 }

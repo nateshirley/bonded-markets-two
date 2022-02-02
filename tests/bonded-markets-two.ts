@@ -81,7 +81,7 @@ describe("bonded-markets-two", () => {
       {
         reserveRatio: 50,
         initialPrice: new BN(0),
-        maxSupply: new BN(100000),
+        maxSupply: new BN(90000),
       },
       creator.wallet.publicKey,
       1112,
@@ -110,9 +110,8 @@ describe("bonded-markets-two", () => {
       signers: [creator.wallet],
     });
 
-    await buy(creator, yeezy, new BN(90));
-    await sell(creator, yeezy, new BN(50));
-    await buy(creator, yeezy, new BN(40));
+    await buyWithNarration(creator, yeezy, new BN(90));
+    //await buy(creator, yeezy, new BN(40));
 
     await program.rpc.unlockCreatorShare(new BN(10), {
       accounts: {
@@ -125,10 +124,13 @@ describe("bonded-markets-two", () => {
       },
       signers: [creator.wallet],
     });
+    await buyWithNarration(creator, yeezy, new BN(190));
+
+    await sell(creator, yeezy, new BN(50));
   });
 
-  const sell = async (user: User, market: Market, amount: BN) => {
-    const tx = await program.rpc.sell(amount, {
+  const sell = async (user: User, market: Market, targets: BN) => {
+    const tx = await program.rpc.sell(targets, {
       accounts: {
         seller: user.wallet.publicKey,
         sellerReserveTokenAccount: user.reserveTokenAccount.address,
@@ -143,8 +145,25 @@ describe("bonded-markets-two", () => {
     });
   };
 
-  const buy = async (user: User, market: Market, amount: BN) => {
-    const tx = await program.rpc.buy(amount, {
+  const buyWithNarration = async (user: User, market: Market, targets: BN) => {
+    let preReserveBalance = await provider.connection.getTokenAccountBalance(
+      user.reserveTokenAccount.address
+    );
+    console.log("\n BUY---");
+    await buy(user, market, targets);
+    let postReserveBalance = await provider.connection.getTokenAccountBalance(
+      user.reserveTokenAccount.address
+    );
+    let totalCost =
+      preReserveBalance.value.uiAmount - postReserveBalance.value.uiAmount;
+    let averagePrice = totalCost / targets.toNumber();
+    console.log("total cost: ", totalCost, "reserve tokens");
+    console.log("price per token: ", averagePrice);
+    console.log("");
+  };
+
+  const buy = async (user: User, market: Market, targets: BN) => {
+    const tx = await program.rpc.buy(targets, {
       accounts: {
         buyer: user.wallet.publicKey,
         buyerReserveTokenAccount: user.reserveTokenAccount.address,

@@ -14,12 +14,13 @@ todo
 - math
 - unlock
 
-possibilities for the unlock
-- mint the premine on market creation and dump all the locked tokens in a locked treasury
-- don't mint any unlocked tokens until the creator actually unlocks them
-- this is slightly less transparent? but also maybe more transparent bc u don't have locked tokens that may/may not ever enter circulation
-- i think it's better for price for the tokens to be unlocked directly rather than to preMint them
-- this means the market would actually just have a creatorShare (like a number )
+
+changes
+- max supply is max supply bought from the curve
+- u can't sell below the seedValue or the creatorUnlock -- both are worth 0
+- floor supply to sell then is seedValue + creator_unlock
+- most u can sell is mintSupply - targets - (seedValue + creator_unlock)
+- seedSupply
 */
 
 #[program]
@@ -60,7 +61,7 @@ pub mod bonded_markets_two {
         instructions::sell::handler(ctx, targets)
     }
 
-    pub fn unlock_creator_share(ctx: Context<UnlockCreatorShare>, amount: u64) -> ProgramResult {
-        instructions::unlock_creator_share::handler(ctx, amount)
+    pub fn unlock_creator_share(ctx: Context<UnlockCreatorShare>, targets: u64) -> ProgramResult {
+        instructions::unlock_creator_share::handler(ctx, targets)
     }
 }

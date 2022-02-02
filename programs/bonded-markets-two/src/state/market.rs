@@ -1,6 +1,12 @@
 use anchor_lang::prelude::*;
 use std::convert::TryFrom;
 
+/*
+1. max supply = max avail to purchase from the curve
+make sure they aren't passing in too big of max supply to exceed u64 max
+less than 100 bill? idk
+*/
+
 #[account]
 pub struct Market {
     pub name: String,
@@ -33,7 +39,7 @@ pub struct CurveConfig {
 pub struct Creator {
     pub wallet: Pubkey,
     pub share: u16, //percentage out of 10000 aka basis points
-    pub amount_unlocked: u64,
+    pub targets_unlocked: u64,
 }
 //32 + 4 + 8 = 44
 
@@ -44,9 +50,12 @@ pub struct Pda {
 }
 //size = 33
 impl MarketMath for Market {
+    fn seed_targets(&self) -> u64 {
+        10
+    }
     fn curve_supply(&self, target_mint_supply: u64) -> u64 {
         target_mint_supply
-            .checked_sub(self.creator.amount_unlocked)
+            .checked_sub(self.creator.targets_unlocked)
             .unwrap()
     }
     fn support_balance(&self, curve_supply: u64) -> u64 {
@@ -103,17 +112,6 @@ impl MarketMath for Market {
         msg!("whole: {}", whole);
         whole.checked_add(self.support_value(targets)).unwrap()
     }
-    //(90+10)* .9
-    //if i do it like this, it will be impossible to actually reach full supply bc u are getting creator share of sell supply not of total
-    //a couple things i could do
-    /*
-    1. change the max supply to mean -- max purchased from the curve
-    2. this way creator share is share of max available to purchase from the curve
-    //max_curve_supply
-    so if u wanted 90 and 10 u would have to do 90 curve supply with 1.12
-    i can make someth client side to calculate it
-    3. that's probably the move
-    */
     fn max_creator_unlock_now(&self, target_mint_supply: u128) -> u64 {
         let creator_share = u128::from(self.creator.share);
         let max =
@@ -135,6 +133,7 @@ impl MarketMath for Market {
 }
 
 pub trait MarketMath {
+    fn seed_targets(&self) -> u64;
     fn curve_supply(&self, target_mint_supply: u64) -> u64;
     fn support_balance(&self, curve_supply: u64) -> u64;
     fn curve_balance(&self, curve_supply: u64, reserve_balance: u64) -> u64;

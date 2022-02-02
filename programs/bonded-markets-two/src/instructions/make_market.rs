@@ -15,7 +15,7 @@ pub fn handler(
     ctx.accounts.market.creator = Creator {
         wallet: ctx.accounts.creator.key(),
         share: creator_share,
-        amount_unlocked: 0,
+        targets_unlocked: 0,
     };
     ctx.accounts.market.curve_config = curve_config;
     ctx.accounts.market.target_mint = ctx.accounts.target_mint.key();

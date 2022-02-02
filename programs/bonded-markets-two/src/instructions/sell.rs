@@ -2,21 +2,21 @@ use {
     crate::state::*,
     crate::utils::*,
     anchor_lang::prelude::*,
-    anchor_spl::{associated_token, token},
+    anchor_spl::{token},
 };
 
 pub fn handler(ctx: Context<Sell>, targets: u64) -> ProgramResult {
-    verify_sell_amount(ctx.accounts.market_target_mint.supply, targets)?;
-    let targets = unlock_adjusted_targets(&ctx.accounts.market, ctx.accounts.market_target_mint.supply, targets);
+    // 1. adjust sale amount to reflect curve reserves
+    let targets = curve_adjusted_targets(&ctx.accounts.market, ctx.accounts.market_target_mint.supply, targets);
+    require_nonzero_sale(&targets)?;
 
-
-    // 1. burn the seller's tokens
+    // 2. burn the seller's tokens
     token::burn(
         ctx.accounts.into_burn_sellers_target_tokens_context(),
         targets,
     )?;
 
-    // 2. calc sale value in reserve tokens
+    // 3. calc sale value in reserve tokens
     let reserve_value = ctx.accounts.market.reserve_value_on_sell(
         targets,
         ctx.accounts.market_target_mint.supply,
@@ -24,7 +24,7 @@ pub fn handler(ctx: Context<Sell>, targets: u64) -> ProgramResult {
     );
     msg!("reserve_value {}", reserve_value);
 
-    // 3. pay the seller in reserve tokens
+    // 4. pay the seller in reserve tokens
     token::transfer(
         ctx.accounts
             .into_transfer_reserve_tokens_to_seller_context()
@@ -38,35 +38,40 @@ pub fn handler(ctx: Context<Sell>, targets: u64) -> ProgramResult {
     Ok(())
 }
 
-//these two are sort of the same thing
-//u actually can't sell below the creator share. or u can but u get nothing in return
-//so u might as well not be able to
-/*
-    if (market.targetTokenSupply - targets < market.preMine) {
-        //selling into the premine portion
-        targets = market.targetTokenSupply - market.preMine;
-      }
- */
-pub fn unlock_adjusted_targets( //need tighter model on the seed
+pub fn curve_adjusted_targets( 
     market: &Account<Market>,
     target_mint_supply: u64,
     targets: u64,) -> u64 {
-        if target_mint_supply.checked_sub(targets).unwrap() < market.creator.amount_unlocked {
-            target_mint_supply.checked_sub(market.creator.amount_unlocked).unwrap()
+        let max_targets = max_targets_sellable(market, target_mint_supply);
+        msg!("max targets on sale, {}", max_targets);
+        if targets > max_targets {
+            msg!("adjusting targets to sell curve's max");
+            max_targets
         } else {
             targets
         }
 }
 
-pub fn verify_sell_amount(
-    target_mint_supply: u64,
-    targets: u64,
-) -> ProgramResult {
-    if target_mint_supply.checked_sub(targets).unwrap() < 10 { //should be programmatic to match seed val
-        return Err(ErrorCode::SellBelowMinSupply.into());
+pub fn require_nonzero_sale(targets: &u64) -> ProgramResult {
+    if *targets < 1 { 
+        Err(ErrorCode::ZeroTargetSale.into())
+    } else {
+        Ok(())
     }
-    Ok(())
 }
+
+//the amount eligible to leave the curve right now (for a nonzero price)
+//seed supply and creator unlock are both worth 0. can't exit from curve
+pub fn max_targets_sellable(
+    market: &Account<Market>,
+    target_mint_supply: u64) -> u64 {
+        msg!("target supply {}", target_mint_supply);
+        msg!("seed targets {}", market.seed_targets());
+        msg!("creator unlock {}", market.creator.targets_unlocked);
+        target_mint_supply.checked_sub(market.seed_targets() + market.creator.targets_unlocked).unwrap()
+}
+
+
 
 impl<'info> Sell<'info> {
     pub fn into_burn_sellers_target_tokens_context(

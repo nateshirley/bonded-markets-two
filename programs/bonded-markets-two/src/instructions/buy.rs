@@ -6,11 +6,12 @@ use {
 };
 
 pub fn handler(ctx: Context<Buy>, targets: u64) -> ProgramResult {
-    verify_buy_amount(
+    let targets = curve_adjusted_targets(
         &ctx.accounts.market,
         ctx.accounts.market_target_mint.supply,
         targets,
-    )?;
+    );
+    require_nonzero_purchase(&targets)?;
 
     // 1) calc purchase price in reserve tokens
     let reserve_value = ctx.accounts.market.reserve_value_on_buy(
@@ -19,7 +20,6 @@ pub fn handler(ctx: Context<Buy>, targets: u64) -> ProgramResult {
         ctx.accounts.market_reserve.amount,
     );
     msg!("reserve_value {}", reserve_value);
-    //panic!();
     // 2) transfer from buyer's wallet to market reserve
     token::transfer(
         ctx.accounts
@@ -37,21 +37,46 @@ pub fn handler(ctx: Context<Buy>, targets: u64) -> ProgramResult {
             ]]),
         targets,
     )?;
-
     Ok(())
 }
 
-pub fn verify_buy_amount(
+pub fn require_nonzero_purchase(targets: &u64) -> ProgramResult {
+    if *targets < 1 {
+        Err(ErrorCode::ZeroTargetSale.into())
+    } else {
+        Ok(())
+    }
+}
+
+pub fn curve_adjusted_targets(
     market: &Account<Market>,
     target_mint_supply: u64,
-    amount: u64,
-) -> ProgramResult {
-    if let Some(max_supply) = market.curve_config.max_supply {
-        if target_mint_supply.checked_add(amount).unwrap() > max_supply {
-            return Err(ErrorCode::BuyExceedsMaxSupply.into());
-        }
+    targets: u64,
+) -> u64 {
+    let max_targets = max_targets_buyable(market, target_mint_supply);
+    msg!("max targets to buy, {}", max_targets);
+    if targets > max_targets {
+        msg!("adjusting targets to buy curve's max");
+        max_targets
+    } else {
+        targets
     }
-    Ok(())
+}
+
+pub fn max_targets_buyable(market: &Account<Market>, target_mint_supply: u64) -> u64 {
+    msg!("target supply {}", target_mint_supply);
+    msg!("seed targets {}", market.seed_targets());
+    msg!("creator unlock {}", market.creator.targets_unlocked);
+    if let Some(max_supply) = market.curve_config.max_supply {
+        //max supply - curve supply
+        return max_supply
+            .checked_sub(market.curve_supply(target_mint_supply))
+            .unwrap();
+    } else {
+        return u64::MAX
+            .checked_sub(market.curve_supply(target_mint_supply))
+            .unwrap();
+    }
 }
 
 impl<'info> Buy<'info> {

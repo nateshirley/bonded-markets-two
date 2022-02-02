@@ -1,11 +1,11 @@
 use {crate::state::*, crate::utils::*, anchor_lang::prelude::*, anchor_spl::token};
 
-pub fn handler(ctx: Context<UnlockCreatorShare>, amount: u64) -> ProgramResult {
+pub fn handler(ctx: Context<UnlockCreatorShare>, targets: u64) -> ProgramResult {
     // 1. make sure they aren't trying to unlock too much
     verify_unlock_amount(
         &ctx.accounts.market,
         ctx.accounts.market_target_mint.supply,
-        amount,
+        targets,
     )?;
     // 2. mint tokens to the creator
     token::mint_to(
@@ -16,15 +16,15 @@ pub fn handler(ctx: Context<UnlockCreatorShare>, amount: u64) -> ProgramResult {
                 ctx.accounts.market.target_mint.as_ref(),
                 &[ctx.accounts.market.patrol.bump],
             ]]),
-        amount,
+        targets,
     )?;
     // 3. update the creator's amount unlocked
-    ctx.accounts.market.creator.amount_unlocked = ctx
+    ctx.accounts.market.creator.targets_unlocked = ctx
         .accounts
         .market
         .creator
-        .amount_unlocked
-        .checked_add(amount)
+        .targets_unlocked
+        .checked_add(targets)
         .unwrap();
 
     Ok(())
@@ -35,7 +35,7 @@ pub fn verify_unlock_amount(
     target_mint_supply: u64,
     amount: u64,
 ) -> ProgramResult {
-    if market.creator.amount_unlocked.checked_add(amount).unwrap()
+    if market.creator.targets_unlocked.checked_add(amount).unwrap()
         > market.max_creator_unlock_now(u128::from(target_mint_supply))
     {
         Err(ErrorCode::GreedyCreatorUnlock.into())
