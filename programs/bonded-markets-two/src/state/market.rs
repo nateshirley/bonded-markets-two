@@ -17,23 +17,22 @@ pub struct Market {
 //44
 //32 * 2
 //33 * 2
-//26
+//18
 //1
-//= 229
+//= 221
 
 #[derive(Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
 pub struct CurveConfig {
     pub reserve_ratio: u8,
-    pub pre_mine: u64,
     pub initial_price: u64,
     pub max_supply: Option<u64>,
 }
-//size = 26
+//size = 18
 
 #[derive(Copy, Clone, Default, AnchorSerialize, AnchorDeserialize)]
 pub struct Creator {
     pub wallet: Pubkey,
-    pub creator_share: u16, //percentage out of 10000 aka basis points
+    pub share: u16, //percentage out of 10000 aka basis points
     pub amount_unlocked: u64,
 }
 //32 + 4 + 8 = 44
@@ -47,7 +46,7 @@ pub struct Pda {
 impl MarketMath for Market {
     fn curve_supply(&self, target_mint_supply: u64) -> u64 {
         target_mint_supply
-            .checked_sub(self.curve_config.pre_mine)
+            .checked_sub(self.creator.amount_unlocked)
             .unwrap()
     }
     fn support_balance(&self, curve_supply: u64) -> u64 {
@@ -104,18 +103,34 @@ impl MarketMath for Market {
         msg!("whole: {}", whole);
         whole.checked_add(self.support_value(targets)).unwrap()
     }
+    //(90+10)* .9
+    //if i do it like this, it will be impossible to actually reach full supply bc u are getting creator share of sell supply not of total
+    //a couple things i could do
+    /*
+    1. change the max supply to mean -- max purchased from the curve
+    2. this way creator share is share of max available to purchase from the curve
+    //max_curve_supply
+    so if u wanted 90 and 10 u would have to do 90 curve supply with 1.12
+    i can make someth client side to calculate it
+    3. that's probably the move
+    */
     fn max_creator_unlock_now(&self, target_mint_supply: u128) -> u64 {
-        let creator_share = u128::from(self.creator.creator_share);
-        u64::try_from(creator_share.checked_mul(target_mint_supply).unwrap() / 10000).unwrap()
+        let creator_share = u128::from(self.creator.share);
+        let max =
+            u64::try_from(creator_share.checked_mul(target_mint_supply).unwrap() / 10000).unwrap();
+        msg!(
+            "max unlock now {} for target supply {}",
+            max,
+            target_mint_supply
+        );
+        max
     }
-    //if we do this then u have to have a max supply. yeah that's fine
-    //technically u could have max supply if creator share is 0? sure
     fn max_creator_unlock_ever(&self) -> u64 {
         let max_supply = u128::from(self.curve_config.max_supply.unwrap_or(0));
-        let creator_share = u128::from(self.creator.creator_share);
-        let big_creator_share: u128 = max_supply * creator_share;
-        let accurate_share = big_creator_share / 10000;
-        u64::try_from(accurate_share).unwrap()
+        let creator_share = u128::from(self.creator.share);
+        let max = u64::try_from(max_supply * creator_share / 10000).unwrap();
+        msg!("max unlock ever {} ", max,);
+        max
     }
 }
 

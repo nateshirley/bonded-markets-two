@@ -6,7 +6,11 @@ use {
 };
 
 pub fn handler(ctx: Context<Buy>, targets: u64) -> ProgramResult {
-    //todo --- make sure it doesn't go to zero
+    verify_buy_amount(
+        &ctx.accounts.market,
+        ctx.accounts.market_target_mint.supply,
+        targets,
+    )?;
 
     // 1) calc purchase price in reserve tokens
     let reserve_value = ctx.accounts.market.reserve_value_on_buy(
@@ -34,6 +38,19 @@ pub fn handler(ctx: Context<Buy>, targets: u64) -> ProgramResult {
         targets,
     )?;
 
+    Ok(())
+}
+
+pub fn verify_buy_amount(
+    market: &Account<Market>,
+    target_mint_supply: u64,
+    amount: u64,
+) -> ProgramResult {
+    if let Some(max_supply) = market.curve_config.max_supply {
+        if target_mint_supply.checked_add(amount).unwrap() > max_supply {
+            return Err(ErrorCode::BuyExceedsMaxSupply.into());
+        }
+    }
     Ok(())
 }
 
@@ -83,9 +100,15 @@ pub struct Buy<'info> {
     )]
     market: Box<Account<'info, Market>>,
     market_patrol: AccountInfo<'info>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = market_target_mint.supply > 0,
+    )]
     market_target_mint: Account<'info, token::Mint>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = market_reserve.amount > 0,
+    )]
     market_reserve: Box<Account<'info, token::TokenAccount>>,
     rent: Sysvar<'info, Rent>,
     associated_token_program: Program<'info, associated_token::AssociatedToken>,

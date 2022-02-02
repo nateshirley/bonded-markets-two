@@ -26,8 +26,6 @@ possibilities for the unlock
 pub mod bonded_markets_two {
 
     use super::*;
-    //todo --- add unlocksd
-    //possibly in a separate program bc it's cooler
     pub fn make_market(
         ctx: Context<MakeMarket>,
         market_bump: u8,
@@ -36,6 +34,7 @@ pub mod bonded_markets_two {
         patrol_bump: u8,
         name: String,
         curve_config: CurveConfig,
+        creator_share: u16,
     ) -> ProgramResult {
         instructions::make_market::handler(
             ctx,
@@ -45,6 +44,7 @@ pub mod bonded_markets_two {
             patrol_bump,
             name,
             curve_config,
+            creator_share,
         )
     }
 
@@ -59,54 +59,8 @@ pub mod bonded_markets_two {
     pub fn sell(ctx: Context<Sell>, targets: u64) -> ProgramResult {
         instructions::sell::handler(ctx, targets)
     }
-    /*
-      //premin
-    //creatorShare
-    //p easy to do this math
-    //just take the share, divide it by
-    let preMinePercentage = market.preMine / market.maxSupply;
-    let maxEligibleRightNow = preMinePercentage * market.targetTokenSupply;
-    if (
-      creator.amountUnlocked + amount <= maxEligibleRightNow &&
-      creator.amountUnlocked + amount <= market.preMine
-    ) {
-      //transfer to the wallet
-      //update amount unlocked
-      creator.amountUnlocked += amount;
-    }
-    */
+
     pub fn unlock_creator_share(ctx: Context<UnlockCreatorShare>, amount: u64) -> ProgramResult {
-        //mint the tokens to the creator
-
-        ctx.accounts.market.creator.amount_unlocked = ctx
-            .accounts
-            .market
-            .creator
-            .amount_unlocked
-            .checked_add(amount)
-            .unwrap();
-
-        Ok(())
+        instructions::unlock_creator_share::handler(ctx, amount)
     }
-}
-
-pub fn verify_unlock_amount(
-    market: Account<Market>,
-    target_mint_supply: u64,
-    amount: u64,
-) -> ProgramResult {
-    if market.creator.amount_unlocked.checked_add(amount).unwrap()
-        < market.max_creator_unlock_now(u128::from(target_mint_supply))
-    {
-        Err(ErrorCode::GreedyCreatorUnlock.into())
-    } else {
-        Ok(())
-    }
-}
-
-#[derive(Accounts)]
-pub struct UnlockCreatorShare<'info> {
-    creator: Signer<'info>,
-    market: Account<'info, Market>,
-    market_target_mint: Account<'info, token::Mint>,
 }

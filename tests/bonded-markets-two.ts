@@ -80,11 +80,11 @@ describe("bonded-markets-two", () => {
       marketConfig,
       {
         reserveRatio: 50,
-        preMine: new BN(0),
         initialPrice: new BN(0),
         maxSupply: new BN(100000),
       },
       creator.wallet.publicKey,
+      1112,
       creator.wallet
     );
 
@@ -110,8 +110,21 @@ describe("bonded-markets-two", () => {
       signers: [creator.wallet],
     });
 
-    await buy(creator, yeezy, new BN(99));
+    await buy(creator, yeezy, new BN(90));
     await sell(creator, yeezy, new BN(50));
+    await buy(creator, yeezy, new BN(40));
+
+    await program.rpc.unlockCreatorShare(new BN(10), {
+      accounts: {
+        creator: creator.wallet.publicKey,
+        market: yeezy.address,
+        marketTargetMint: yeezy.targetMint,
+        creatorTargetTokenAccount: creator.targetTokenAccount.address,
+        marketPatrol: yeezy.patrol.address,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [creator.wallet],
+    });
   });
 
   const sell = async (user: User, market: Market, amount: BN) => {
@@ -183,7 +196,7 @@ describe("bonded-markets-two", () => {
       reserveTokenAccount.address,
       reserveMintAuthority,
       [],
-      1000 * RESERVE_DECIMAL_MODIFIER //10 billy
+      100000 * RESERVE_DECIMAL_MODIFIER //10 billy
     );
     return {
       wallet: wallet,

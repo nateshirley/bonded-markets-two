@@ -8,16 +8,13 @@ pub fn handler(
     patrol_bump: u8,
     name: String,
     curve_config: CurveConfig,
+    creator_share: u16,
 ) -> ProgramResult {
-    /* unlock constraints
-        - creator share must be less than 5k
-        - creator share must be 0 if there's no max supply
-    */
-
+    verify_curve_config(curve_config, creator_share)?;
     ctx.accounts.market.name = name;
     ctx.accounts.market.creator = Creator {
         wallet: ctx.accounts.creator.key(),
-        creator_share: 1111, //make sure it's never bigger than 10k (5k? idk)
+        share: creator_share,
         amount_unlocked: 0,
     };
     ctx.accounts.market.curve_config = curve_config;
@@ -33,6 +30,17 @@ pub fn handler(
     };
     ctx.accounts.market.bump = market_bump;
 
+    Ok(())
+}
+
+pub fn verify_curve_config(curve_config: CurveConfig, creator_share: u16) -> ProgramResult {
+    if creator_share > 50000 {
+        return Err(ErrorCode::ExcessiveCreatorShare.into());
+    }
+    if curve_config.max_supply == None && creator_share != 0 {
+        //if using infinite supply, creator share must be 0
+        return Err(ErrorCode::InfiniteSupplyRequiresZeroCreatorShare.into());
+    }
     Ok(())
 }
 
@@ -57,7 +65,7 @@ pub struct MakeMarket<'info> {
         seeds = [MARKET_SEED, target_mint.key().as_ref()],
         bump = market_bump,
         payer = payer,
-        space = 217, //math in market struct
+        space = 221, //math in market struct
     )]
     market: Account<'info, Market>,
     #[account(

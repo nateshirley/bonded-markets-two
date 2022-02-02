@@ -9,7 +9,7 @@ pub fn handler(ctx: Context<SeedMarket>) -> ProgramResult {
         ctx.accounts
             .into_mint_targets_to_seeder_context()
             .with_signer(&[&[
-                &MARKET_PATROL_SEED[..],
+                MARKET_PATROL_SEED,
                 ctx.accounts.market.target_mint.as_ref(),
                 &[ctx.accounts.market.patrol.bump],
             ]]),

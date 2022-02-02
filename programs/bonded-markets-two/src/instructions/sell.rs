@@ -6,6 +6,10 @@ use {
 };
 
 pub fn handler(ctx: Context<Sell>, targets: u64) -> ProgramResult {
+    verify_sell_amount(ctx.accounts.market_target_mint.supply, targets)?;
+    let targets = unlock_adjusted_targets(&ctx.accounts.market, ctx.accounts.market_target_mint.supply, targets);
+
+
     // 1. burn the seller's tokens
     token::burn(
         ctx.accounts.into_burn_sellers_target_tokens_context(),
@@ -31,6 +35,36 @@ pub fn handler(ctx: Context<Sell>, targets: u64) -> ProgramResult {
             ]]),
         reserve_value,
     )?;
+    Ok(())
+}
+
+//these two are sort of the same thing
+//u actually can't sell below the creator share. or u can but u get nothing in return
+//so u might as well not be able to
+/*
+    if (market.targetTokenSupply - targets < market.preMine) {
+        //selling into the premine portion
+        targets = market.targetTokenSupply - market.preMine;
+      }
+ */
+pub fn unlock_adjusted_targets( //need tighter model on the seed
+    market: &Account<Market>,
+    target_mint_supply: u64,
+    targets: u64,) -> u64 {
+        if target_mint_supply.checked_sub(targets).unwrap() < market.creator.amount_unlocked {
+            target_mint_supply.checked_sub(market.creator.amount_unlocked).unwrap()
+        } else {
+            targets
+        }
+}
+
+pub fn verify_sell_amount(
+    target_mint_supply: u64,
+    targets: u64,
+) -> ProgramResult {
+    if target_mint_supply.checked_sub(targets).unwrap() < 10 { //should be programmatic to match seed val
+        return Err(ErrorCode::SellBelowMinSupply.into());
+    }
     Ok(())
 }
 

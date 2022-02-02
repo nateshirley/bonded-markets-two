@@ -28,6 +28,7 @@ export const makeMarket = async (
   marketConfig: NewMarketConfig,
   curveConfig: CurveConfig,
   creator: PublicKey,
+  creatorShare: number, //basis points below 40% aka 0-4000
   creatorPair?: Keypair
 ): Promise<Market> => {
   let creatorTargetTokenAccount = await findAssociatedTokenAccount(
@@ -51,6 +52,7 @@ export const makeMarket = async (
     marketConfig.patrol.bump,
     marketConfig.name,
     curveConfig,
+    creatorShare,
     {
       accounts: {
         payer: creator,
