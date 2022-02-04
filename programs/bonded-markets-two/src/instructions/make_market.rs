@@ -12,26 +12,28 @@ pub fn handler(
     curve_config: CurveConfig,
     creator_share: u16,
 ) -> ProgramResult {
+    // optional: can move verify_curve_config and market_patrol_is_canonical into an `access_control func
     verify_curve_config(curve_config, creator_share)?;
-    ctx.accounts.market.name = name;
-    ctx.accounts.market.creator = Creator {
+    let market = &mut ctx.accounts.market;
+    market.name = name;
+    market.creator = Creator {
         wallet: ctx.accounts.creator.key(),
         share: creator_share,
         targets_unlocked: 0,
     };
-    ctx.accounts.market.curve_config = curve_config;
-    ctx.accounts.market.target_mint = ctx.accounts.target_mint.key();
-    ctx.accounts.market.reserve_mint = ctx.accounts.reserve_mint.key();
-    ctx.accounts.market.reserve = Pda {
+    market.curve_config = curve_config;
+    market.target_mint = ctx.accounts.target_mint.key();
+    market.reserve_mint = ctx.accounts.reserve_mint.key();
+    market.reserve = Pda {
         address: ctx.accounts.reserve.key(),
         bump: reserve_bump,
     };
 
-    ctx.accounts.market.patrol = Pda {
+    market.patrol = Pda {
         address: ctx.accounts.patrol.key(),
         bump: patrol_bump,
     };
-    ctx.accounts.market.bump = market_bump;
+    market.bump = market_bump;
 
     Ok(())
 }
