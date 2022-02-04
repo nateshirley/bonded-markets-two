@@ -1,5 +1,7 @@
 use {crate::id, crate::state::*, crate::utils::*, anchor_lang::prelude::*, anchor_spl::token};
 
+const MAX_CREATOR_SHARE: u16 = 5000;
+
 pub fn handler(
     ctx: Context<MakeMarket>,
     market_bump: u8,
@@ -24,6 +26,7 @@ pub fn handler(
         address: ctx.accounts.reserve.key(),
         bump: reserve_bump,
     };
+
     ctx.accounts.market.patrol = Pda {
         address: ctx.accounts.patrol.key(),
         bump: patrol_bump,
@@ -34,7 +37,7 @@ pub fn handler(
 }
 
 pub fn verify_curve_config(curve_config: CurveConfig, creator_share: u16) -> ProgramResult {
-    if creator_share > 50000 {
+    if creator_share > MAX_CREATOR_SHARE {
         return Err(ErrorCode::ExcessiveCreatorShare.into());
     }
     if curve_config.max_supply == None && creator_share != 0 {
