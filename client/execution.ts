@@ -18,10 +18,10 @@ import {
   createAssociatedTokenAccountInstruction,
   findAssociatedTokenAccount,
 } from "./tokenHelpers";
-import { BondedMarketsTwo } from "./BondedMarketsTwo";
+import { BondedMarkets as BondedMarketsType } from "./BondedMarketsType";
 
 export const buy = async (
-  program: Program<BondedMarketsTwo>,
+  program: Program<BondedMarketsType>,
   user: User,
   market: Market,
   targets: BN,
@@ -51,7 +51,7 @@ export const buy = async (
 };
 
 export const sell = async (
-  program: Program<BondedMarketsTwo>,
+  program: Program<BondedMarketsType>,
   user: User,
   market: Market,
   targets: BN,
@@ -78,7 +78,7 @@ export const sell = async (
 };
 
 export const buyWithNarration = async (
-  program: Program<BondedMarketsTwo>,
+  program: Program<BondedMarketsType>,
   user: User,
   market: Market,
   targets: BN,
@@ -103,7 +103,7 @@ export const buyWithNarration = async (
 };
 
 export const sellWithNarration = async (
-  program: Program<BondedMarketsTwo>,
+  program: Program<BondedMarketsType>,
   user: User,
   market: Market,
   targets: BN,
@@ -144,7 +144,7 @@ export const sellWithNarration = async (
 };
 
 export const unlockCreatorShare = async (
-  program: Program<BondedMarketsTwo>,
+  program: Program<BondedMarketsType>,
   creator: User,
   market: Market,
   targets: BN,
@@ -208,7 +208,7 @@ export const createUser = async (
 };
 
 export const createMarket = async (
-  program: Program<BondedMarketsTwo>,
+  program: Program<BondedMarketsType>,
   marketConfig: NewMarketConfig,
   curveConfig: CurveConfig,
   creator: PublicKey,

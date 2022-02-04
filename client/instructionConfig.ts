@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { BN, Program, Provider } from "@project-serum/anchor";
-import idl from "../target/idl/bonded_markets_two.json";
+import idl from "../target/idl/bonded_markets.json";
 import * as find from "./findAccount";
 import { NewMarketConfig } from "./interfaces";
 

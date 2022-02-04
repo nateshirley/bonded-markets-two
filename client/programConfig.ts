@@ -1,10 +1,10 @@
 import * as anchor from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { BN, Program, Provider } from "@project-serum/anchor";
-import idl from "./bonded_markets_two_idl.json";
+import idl from "./bonded_markets_idl.json";
 
 import { Connection, Commitment } from "@solana/web3.js";
-import { BondedMarketsTwo } from "./BondedMarketsTwo";
+import { BondedMarkets as BondedMarketsType } from "./BondedMarketsType";
 
 //cluster = "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/"
 
@@ -30,19 +30,19 @@ export const getProvider = (withWallet: any) => {
 
 export const getBondedMarketsProgram = (
   wallet: any
-): Program<BondedMarketsTwo> => {
+): Program<BondedMarketsType> => {
   const provider = getProvider(wallet);
   let BondedMarketsIdl: any = idl;
   return new Program(BondedMarketsIdl, BONDED_MARKETS_PROGRAM_ID, provider);
 };
 
 export const BONDED_MARKETS_PROGRAM_ID = new web3.PublicKey(
-  "HviePMTxjaP7bWYRErxyZjruUnmVY36viYPphYF46nvL"
+  "3WCf7VFEebTDAzLdDyZsNsETcS4qrmSpiMsCib2m2rQw"
 );
 
 export class BondedMarkets {
   static programId = BONDED_MARKETS_PROGRAM_ID;
-  public program: Program<BondedMarketsTwo>;
+  public program: Program<BondedMarketsType>;
   constructor(wallet: any) {
     this.program = getBondedMarketsProgram(wallet);
   }
