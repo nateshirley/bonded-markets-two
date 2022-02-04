@@ -20,8 +20,6 @@ import {
 } from "./tokenHelpers";
 import { BondedMarketsTwo } from "../../target/types/bonded_markets_two";
 
-export const seedMarket = async () => {};
-
 export const buy = async (
   program: Program<BondedMarketsTwo>,
   user: User,
@@ -147,9 +145,9 @@ export const sellWithNarration = async (
 
 export const unlockCreatorShare = async (
   program: Program<BondedMarketsTwo>,
-  targets: BN,
   creator: User,
   market: Market,
+  targets: BN,
   creatorSignature?: Keypair
 ) => {
   let signers = [];
@@ -209,7 +207,7 @@ export const createUser = async (
   };
 };
 
-export const makeMarket = async (
+export const createMarket = async (
   program: Program<BondedMarketsTwo>,
   marketConfig: NewMarketConfig,
   curveConfig: CurveConfig,
@@ -231,7 +229,7 @@ export const makeMarket = async (
   }
   console.log(marketConfig.targetMint.publicKey.toBase58());
   console.log(DEFAULT_RESERVE_MINT.publicKey.toBase58());
-  const tx = await program.rpc.makeMarket(
+  const tx = await program.rpc.createMarket(
     marketConfig.market.bump,
     marketConfig.attribution.bump,
     marketConfig.reserve.bump,

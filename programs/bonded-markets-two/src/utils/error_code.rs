@@ -15,6 +15,6 @@ pub enum ErrorCode {
     BuyExceedsMaxCurveSupply,
     #[msg("selling for zero return. below curve minimum")]
     ZeroTargetSale,
-    #[msg("buying zero targets")]
+    #[msg("buying zero targets, likely hit max supply")]
     ZeroTargetBuy,
 }

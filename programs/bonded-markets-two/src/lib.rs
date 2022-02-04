@@ -32,8 +32,8 @@ changes
 pub mod bonded_markets_two {
 
     use super::*;
-    pub fn make_market(
-        ctx: Context<MakeMarket>,
+    pub fn create_market(
+        ctx: Context<CreateMarket>,
         market_bump: u8,
         attribution_bump: u8,
         reserve_bump: u8,
@@ -42,7 +42,7 @@ pub mod bonded_markets_two {
         curve_config: CurveConfig,
         creator_share: u16,
     ) -> ProgramResult {
-        instructions::make_market::handler(
+        instructions::create_market::handler(
             ctx,
             market_bump,
             attribution_bump,
@@ -52,10 +52,6 @@ pub mod bonded_markets_two {
             curve_config,
             creator_share,
         )
-    }
-
-    pub fn seed_market(ctx: Context<SeedMarket>) -> ProgramResult {
-        instructions::seed_market::handler(ctx)
     }
 
     pub fn buy(ctx: Context<Buy>, targets: u64) -> ProgramResult {

@@ -23,6 +23,7 @@ pub fn handler(ctx: Context<Sell>, targets: u64) -> ProgramResult {
         ctx.accounts.market_reserve.amount,
     );
     msg!("reserve_value {}", reserve_value);
+    msg!("reserve bal {}", ctx.accounts.market_reserve.amount);
     // 4. pay the seller in reserve tokens
     token::transfer(
         ctx.accounts
@@ -41,11 +42,11 @@ pub fn curve_adjusted_targets(
     market: &Account<Market>,
     target_mint_supply: u64,
     targets: u64,) -> u64 {
-        let max_targets = max_targets_sellable(market, target_mint_supply);
-        msg!("max targets on sale, {}", max_targets);
-        if targets > max_targets {
+        let curve_sales = market.curve_sales(target_mint_supply);
+        msg!("max targets on sale, {}", curve_sales);
+        if targets > curve_sales {
             msg!("adjusting targets to sell curve's max");
-            max_targets
+            curve_sales
         } else {
             targets
         }
@@ -58,18 +59,6 @@ pub fn require_nonzero_sale(targets: &u64) -> ProgramResult {
         Ok(())
     }
 }
-
-//the amount eligible to leave the curve right now (for a nonzero price)
-//seed supply and creator unlock are both worth 0. can't exit from curve
-pub fn max_targets_sellable(
-    market: &Account<Market>,
-    target_mint_supply: u64) -> u64 {
-        msg!("target supply {}", target_mint_supply);
-        msg!("seed targets {}", market.seed_targets());
-        msg!("creator unlock {}", market.creator.targets_unlocked);
-        target_mint_supply.checked_sub(market.seed_targets() + market.creator.targets_unlocked).unwrap()
-}
-
 
 
 impl<'info> Sell<'info> {

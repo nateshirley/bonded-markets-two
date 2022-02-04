@@ -1,7 +1,7 @@
 use {crate::id, crate::state::*, crate::utils::*, anchor_lang::prelude::*, anchor_spl::token};
 
 pub fn handler(
-    ctx: Context<MakeMarket>,
+    ctx: Context<CreateMarket>,
     market_bump: u8,
     _attribution_bump: u8,
     reserve_bump: u8,
@@ -56,7 +56,7 @@ pub fn market_patrol_is_canoncial(
 
 #[derive(Accounts)]
 #[instruction(market_bump: u8, attribution_bump: u8, reserve_bump: u8, patrol_bump: u8, name: String)]
-pub struct MakeMarket<'info> {
+pub struct CreateMarket<'info> {
     #[account(mut)]
     payer: Signer<'info>,
     creator: Signer<'info>,
@@ -65,7 +65,7 @@ pub struct MakeMarket<'info> {
         seeds = [MARKET_SEED, target_mint.key().as_ref()],
         bump = market_bump,
         payer = payer,
-        space = 221, //math in market struct
+        space = 225, //math in market struct
     )]
     market: Account<'info, Market>,
     #[account(

@@ -33,5 +33,6 @@ export interface NewMarketConfig {
 export interface CurveConfig {
   reserveRatio: number;
   initialPrice: BN;
+  initialSlope: number;
   maxSupply?: BN;
 }

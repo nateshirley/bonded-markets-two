@@ -4,8 +4,8 @@ import { BondedMarketsTwo } from "../target/types/bonded_markets_two";
 import {
   buy,
   buyWithNarration,
+  createMarket,
   createUser,
-  makeMarket,
   requestAirdrop,
   sell,
   sellWithNarration,
@@ -25,17 +25,11 @@ import {
   RESERVE_DECIMAL_MODIFIER,
 } from "./helpers/defaultConstants";
 import { Market, User } from "./helpers/interfaces";
-import {
-  createAssociatedTokenAccountInstruction,
-  findAssociatedTokenAccount,
-} from "./helpers/tokenHelpers";
+
 import { getNewMarketConfig } from "./helpers/instructionConfig";
 import { BondedMarkets } from "./helpers/programConfig";
 
 describe("bonded-markets-two", () => {
-  // Configure the client to use the local cluster.
-  //configure seed market or not
-
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
   const bondedMarkets = new BondedMarkets(provider.wallet);
@@ -97,67 +91,42 @@ describe("bonded-markets-two", () => {
       100000 * RESERVE_DECIMAL_MODIFIER //10 billy
     );
 
-    genesisMarket = await makeMarket(
+    genesisMarket = await createMarket(
       program,
       genesisConfig,
       {
         reserveRatio: 50,
         initialPrice: new BN(0),
+        initialSlope: 20, //out of 10_000_000
         maxSupply: new BN(90000),
       },
       provider.wallet.publicKey,
       1112
     );
 
-    /*
-    difference im thinking of doing is storing the seed vals in the market
-    slope doens't make as much sense bc it won't be accurate when the treasury changes
-    */
-    //last thing is here
-    await program.rpc.seedMarket({
-      accounts: {
-        seeder: provider.wallet.publicKey,
-        market: genesisMarket.address,
-        marketTargetMint: genesisMarket.targetMint,
-        seederTargetTokenAccount: userJoe.targetTokenAccount.address,
-        seederReserveTokenAccount: userJoe.reserveTokenAccount.address,
-        marketReserve: genesisMarket.reserve.address,
-        marketPatrol: genesisMarket.patrol.address,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      },
-      instructions: [
-        createAssociatedTokenAccountInstruction(
-          genesisMarket.targetMint,
-          userJoe.targetTokenAccount.address,
-          provider.wallet.publicKey,
-          provider.wallet.publicKey
-        ),
-      ],
-    });
-
     await buyWithNarration(
       bondedMarkets.program,
       userJoe,
       genesisMarket,
-      new BN(90)
+      new BN(1000)
     );
     await buyWithNarration(
       bondedMarkets.program,
       userJoe,
       genesisMarket,
-      new BN(190)
+      new BN(2000)
     );
     await unlockCreatorShare(
       bondedMarkets.program,
-      new BN(10),
       userJoe,
-      genesisMarket
+      genesisMarket,
+      new BN(10)
     );
     await sellWithNarration(
       bondedMarkets.program,
       userJoe,
       genesisMarket,
-      new BN(210)
+      new BN(1)
     );
   });
 
