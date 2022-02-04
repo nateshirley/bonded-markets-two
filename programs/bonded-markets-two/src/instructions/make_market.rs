@@ -14,6 +14,7 @@ pub fn handler(
 ) -> ProgramResult {
     // optional: can move verify_curve_config and market_patrol_is_canonical into an `access_control func
     verify_curve_config(curve_config, creator_share)?;
+    ctx.accounts.attribution.target_mint = ctx.accounts.target_mint.key();
     let market = &mut ctx.accounts.market;
     market.name = name;
     market.creator = Creator {
