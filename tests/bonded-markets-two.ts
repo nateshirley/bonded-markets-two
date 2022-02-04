@@ -1,6 +1,5 @@
 import * as anchor from "@project-serum/anchor";
 import { BN, Program } from "@project-serum/anchor";
-import { BondedMarketsTwo } from "../target/types/bonded_markets_two";
 import {
   buy,
   buyWithNarration,
@@ -10,7 +9,7 @@ import {
   sell,
   sellWithNarration,
   unlockCreatorShare,
-} from "./helpers/execution";
+} from "../client/execution";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, SystemProgram, Keypair } from "@solana/web3.js";
 import {
@@ -23,11 +22,11 @@ import {
   RESERVE_DECIMALS,
   DEFAULT_RESERVE_MINT,
   RESERVE_DECIMAL_MODIFIER,
-} from "./helpers/defaultConstants";
-import { Market, User } from "./helpers/interfaces";
+} from "../client/defaultConstants";
+import { Market, User } from "../client/interfaces";
 
-import { getNewMarketConfig } from "./helpers/instructionConfig";
-import { BondedMarkets } from "./helpers/programConfig";
+import { getNewMarketConfig } from "../client/instructionConfig";
+import { BondedMarkets } from "../client/programConfig";
 
 describe("bonded-markets-two", () => {
   const provider = anchor.Provider.env();

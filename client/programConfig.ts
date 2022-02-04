@@ -1,10 +1,10 @@
 import * as anchor from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { BN, Program, Provider } from "@project-serum/anchor";
-import idl from "../../target/idl/bonded_markets_two.json";
+import idl from "./bonded_markets_two_idl.json";
 
 import { Connection, Commitment } from "@solana/web3.js";
-import { BondedMarketsTwo } from "../../target/types/bonded_markets_two";
+import { BondedMarketsTwo } from "./BondedMarketsTwo";
 
 //cluster = "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/"
 

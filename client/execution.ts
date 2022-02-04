@@ -18,7 +18,7 @@ import {
   createAssociatedTokenAccountInstruction,
   findAssociatedTokenAccount,
 } from "./tokenHelpers";
-import { BondedMarketsTwo } from "../../target/types/bonded_markets_two";
+import { BondedMarketsTwo } from "./BondedMarketsTwo";
 
 export const buy = async (
   program: Program<BondedMarketsTwo>,
