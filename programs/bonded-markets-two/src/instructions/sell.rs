@@ -23,7 +23,6 @@ pub fn handler(ctx: Context<Sell>, targets: u64) -> ProgramResult {
         ctx.accounts.market_reserve.amount,
     );
     msg!("reserve_value {}", reserve_value);
-
     // 4. pay the seller in reserve tokens
     token::transfer(
         ctx.accounts

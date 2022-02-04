@@ -2,7 +2,7 @@ import { BN } from "@project-serum/anchor";
 import { PublicKey, Keypair } from "@solana/web3.js";
 
 export interface User {
-  wallet: Keypair;
+  walletPubkey: PublicKey;
   reserveTokenAccount: Pda;
   targetTokenAccount: Pda;
 }

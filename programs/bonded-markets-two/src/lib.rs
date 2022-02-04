@@ -21,6 +21,11 @@ changes
 - floor supply to sell then is seedValue + creator_unlock
 - most u can sell is mintSupply - targets - (seedValue + creator_unlock)
 - seedSupply
+- if we are doing one curve i can fix all other values
+//vars to consider
+- seed targets
+- creator unlock
+- max curve supply
 */
 
 #[program]
